@@ -1,0 +1,199 @@
+PYTHON + DNSBRUTER + UVLOOP + XSS RECON — SURVIVAL NOTES (EXPANDED)
+
+Save this file. This is a practical, no-BS guide to avoid the exact mess
+you faced and to run XSS recon tools without losing hours to dependency
+hell.
+
+  ------------------------------------
+  PART 1) THE EXACT ERRORS YOU FACED
+  ------------------------------------
+
+1)  SyntaxError: kfrom colorama … -> Meaning: The installed package file
+    is CORRUPTED or partially overwritten. -> Cause:
+    -   Broken install
+    -   Bad package version
+    -   Dirty environment -> Fix:
+    -   Reinstall the tool in a clean environment (pipx / venv)
+2)  RuntimeError: There is no current event loop in thread ‘MainThread’
+    -> Meaning: uvloop + your Python version are incompatible. -> Cause:
+    -   New uvloop (0.22.x) + Python 3.10/3.11 breaks asyncio behavior
+        -> Symptom:
+    -   Tool crashes immediately on start -> Fix:
+    -   Downgrade uvloop to a known working version
+3)  ModuleNotFoundError: No module named ‘uvloop’ -> Meaning: The tool
+    HARD-IMPORTS uvloop. -> Cause:
+    -   You removed uvloop, but the tool expects it to exist -> Fix:
+    -   Install an older compatible uvloop instead of removing it
+4)  Reinstalling does NOT fix it -> Meaning:
+    -   pip / pipx keeps installing the same broken dependency
+        combination -> Fix:
+    -   You must PIN the dependency version manually
+
+  ---------------------------------------
+  PART 2) ROOT CAUSE (THE REAL PROBLEM)
+  ---------------------------------------
+
+-   dnsbruter is badly maintained
+-   It hard-requires uvloop
+-   It does NOT pin a safe uvloop version
+-   New uvloop breaks on modern Python (3.10 / 3.11)
+-   pip/pipx installs incompatible versions by default
+
+Result: - New uvloop -> asyncio crash - No uvloop -> import crash -
+Reinstall -> same broken combo again
+
+This is NOT user error. This is dependency hell.
+
+  ------------------------------------------------
+  PART 3) THE ONLY WORKING FIX (NO CODE EDITING)
+  ------------------------------------------------
+
+Run this EXACTLY when installing dnsbruter:
+
+pipx uninstall dnsbruter pipx install dnsbruter pipx runpip dnsbruter
+uninstall -y uvloop pipx runpip dnsbruter install “uvloop==0.17.0”
+
+Test:
+
+dnsbruter -h
+
+If the help menu shows -> FIXED.
+
+  ----------------------------
+  PART 4) WHY THIS FIX WORKS
+  ----------------------------
+
+-   dnsbruter requires uvloop to exist
+-   New uvloop breaks asyncio on modern Python
+-   Old uvloop==0.17.0:
+    -   Still imports correctly
+    -   Does not crash event loop
+    -   Keeps dnsbruter working
+
+  -------------------------------------------------------
+  PART 5) GENERAL PYTHON TOOLING RULES (VERY IMPORTANT)
+  -------------------------------------------------------
+
+1)  Never install recon tools into system Python
+2)  Use:
+    -   pipx for CLI tools
+    -   venv for GitHub projects
+3)  If you see:
+    -   asyncio errors
+    -   uvloop errors
+    -   event loop errors -> Think VERSION MISMATCH first
+4)  If a tool works for others but not for you: -> Check Python version
+    -> Check dependency versions -> Do NOT assume skill issue
+
+  ------------------------------
+  PART 6) FAST DEBUG CHECKLIST
+  ------------------------------
+
+1)  Check Python version: python3 –version
+
+2)  Check where tool is installed: which dnsbruter
+
+3)  List packages inside tool (pipx): pipx runpip dnsbruter list
+
+4)  If you see uvloop >= 0.20.x: -> Downgrade it
+
+5)  If you see syntax errors inside site-packages: -> Reinstall the tool
+    (environment is dirty)
+
+  ------------------------------------------------
+  PART 7) XSS RECON TOOLING STACK (STABLE SETUP)
+  ------------------------------------------------
+
+Recommended tools:
+
+-   waybackurls / gau -> Collect historical URLs
+-   katana / hakrawler -> Crawl live site
+-   httpx -> Check alive endpoints
+-   gf -> Pattern filtering
+-   qsreplace -> Replace parameter values
+-   kxss -> Find reflections
+-   dalfox -> XSS scanning + verification
+-   nuclei -> Template-based checks
+-   Browser (Firefox/Burp) -> Manual testing
+
+Install CLI tools with pipx or go tools where possible.
+
+  ----------------------------------------
+  PART 8) XSS RECON WORKFLOW (PRACTICAL)
+  ----------------------------------------
+
+1)  Collect URLs: waybackurls domain.com gau domain.com katana -u
+    https://domain.com
+
+2)  Merge and clean: sort -u urls.txt > all_urls.txt
+
+3)  Filter parameters: grep “=” all_urls.txt > params.txt
+
+4)  Check alive: httpx -l params.txt -o alive.txt
+
+5)  Find reflections: cat alive.txt | kxss > reflections.txt
+
+6)  Find XSS patterns: gf xss alive.txt > xss_candidates.txt
+
+7)  Scan with dalfox: dalfox file xss_candidates.txt
+
+8)  Manually verify in browser.
+
+  -------------------------------------------
+  PART 9) COMMON XSS TOOL ERRORS & MEANINGS
+  -------------------------------------------
+
+-   Tool crashes on start: -> Python / dependency mismatch
+
+-   No findings but reflections exist: -> Context matters, scanner may
+    miss it
+
+-   False positives: -> Reflection is not execution, test manually
+
+-   WAF blocks payloads: -> Try encoding, context breaking, bypass
+    techniques
+
+  -----------------------------------------
+  PART 10) CONTEXT-BASED PAYLOAD STRATEGY
+  -----------------------------------------
+
+HTML context: -
+-   
+
+Attribute context: - ” onmouseover=alert(1) x=” - ’ onfocus=alert(1) x=’
+
+JS context: - ’;alert(1);// - “;alert(1);//
+
+Rule: Always break out of the context FIRST, then execute JS.
+
+  -----------------------------------------
+  PART 11) WHY TOOLS FAIL (REALITY CHECK)
+  -----------------------------------------
+
+-   Many recon tools are:
+    -   Outdated
+    -   Poorly maintained
+    -   Not tested on new Python
+-   Dependency rot is NORMAL in security tooling
+-   You must:
+    -   Pin versions
+    -   Isolate environments
+    -   Expect breakage
+
+  --------------------------
+  PART 12) ONE-LINE TRUTHS
+  --------------------------
+
+-   If it crashes in asyncio -> suspect uvloop
+-   If reinstall doesn’t fix it -> pin versions
+-   If syntax error in site-packages -> dirty install
+-   If tool wastes hours -> tool is broken, not you
+
+  ---------------------
+  PART 13) FINAL RULE
+  ---------------------
+
+This was not a hacking problem. This was Python dependency hell + badly
+maintained tools.
+
+Save this file. It will save you hours next time.

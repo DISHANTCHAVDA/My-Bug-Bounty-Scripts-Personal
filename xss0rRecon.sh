@@ -56,11 +56,12 @@ clear
 
 # Display banner
 echo -e "${BOLD_BLUE}"
-echo "               ___         ____                              ____  "
-echo "__  _____ ___ / _ \ _ __  |  _ \ ___  ___ ___  _ __   __   _|___ \ V2"
-echo "\ \/ / __/ __| | | | '__| | |_) / _ \/ __/ _ \| '_ \  \ \ / / __) |"
-echo " >  <\__ \__ \ |_| | |    |  _ <  __/ (_| (_) | | | |  \ V / / __/ "
-echo "/_/\_\___/___/\___/|_|    |_| \_\___|\___\___/|_| |_|   \_/ |_____|"
+echo "               ___         ____                              _____ "
+echo "__  _____ ___ / _ \ _ __  |  _ \ ___  ___ ___  _ __   __   _|___ / "
+echo "\ \/ / __/ __| | | | '__| | |_) / _ \/ __/ _ \| '_ \  \ \ / / |_ \ "
+echo " >  <\__ \__ \ |_| | |    |  _ <  __/ (_| (_) | | | |  \ V / ___) |"
+echo "/_/\_\___/___/\___/|_|    |_| \_\___|\___\___/|_| |_|   \_/ |____/ "
+echo "                           xss0r Recon v3"
 echo -e "${NC}"
 
 # Centered Contact Information
@@ -82,7 +83,9 @@ display_options() {
     echo -e "${YELLOW}9: Exit${NC}"
     echo -e "${YELLOW}10: Guide to Deploying xss0r on VPS Servers${NC}"
     echo -e "${YELLOW}11: Path-based XSS${NC}"
+    echo -e "${YELLOW}12: Domains Search Inputs${NC}"
 }
+
 
 # Function to display Guide to Deploying xss0r on VPS Servers information with better formatting and crystal-like color
 show_vps_info() {
@@ -242,6 +245,7 @@ fi
     sudo apt install pip3
     pip3 install requests urllib3
     sudo pip uninstall -y subprober subdominator dnsbruter --break-system-packages
+    pip install aiosqlite
     sudo apt install -y python3.12
     sudo apt install -y build-essential libssl-dev zlib1g-dev libncurses5-dev libnss3-dev libsqlite3-dev libreadline-dev libffi-dev curl libbz2-dev make
     sudo apt install -y pkg-config
@@ -499,6 +503,8 @@ if ! command -v dnsbruter &> /dev/null; then
 
     show_progress "Dnsbruter installation complete."
     sleep 3
+    python3 -m venv .venv
+    source .venv/bin/activate
     sudo pip3 install dnsbruter "aiodns>=3.2.0" "aiofiles>=24.1.0" "alive_progress>=3.2.0" "art>=6.1" "asynciolimiter>=1.1.0.post3" "colorama>=0.4.4" "requests>=2.32.3" "setuptools>=75.2.0" "uvloop>=0.21.0"
 
 else
@@ -532,7 +538,9 @@ if [ ! -d "Subdominator" ]; then
         # Clean up by removing the cloned directory after installation
         cd ..
         sudo rm -rf Subdominator
-        sudo pipx inject subdominator "aiofiles>=23.2.1" "aiohttp>=3.9.4" "appdirs>=1.4.4" "httpx>=0.27.2" "art>=6.1" "beautifulsoup4>=4.11.1" "colorama>=0.4.6" "fake_useragent>=1.5.0" "PyYAML>=6.0.1" "requests>=2.31.0" "rich>=13.7.1" "urllib3>=1.26.18" "tldextract>=5.1.2"
+        python3 -m venv .venv
+        source .venv/bin/activate
+        sudo pipx inject subdominator "aiofiles>=23.2.1" "aiosqlite" "aiohttp>=3.9.4" "appdirs>=1.4.4" "httpx>=0.27.2" "art>=6.1" "beautifulsoup4>=4.11.1" "colorama>=0.4.6" "fake_useragent>=1.5.0" "PyYAML>=6.0.1" "requests>=2.31.0" "rich>=13.7.1" "urllib3>=1.26.18" "tldextract>=5.1.2"
 
     else
         echo "Subdominator installed successfully using pip."
@@ -564,6 +572,7 @@ if [ ! -d "SubProber" ]; then
 
         # Install from local cloned repository
         sudo pip install . --break-system-packages --root-user-action=ignore
+        pip install subprober aiojarm
         subprober -up
 
         # Clean up by removing the cloned directory after installation
@@ -575,8 +584,12 @@ if [ ! -d "SubProber" ]; then
     fi
 
     show_progress "SubProber installation complete."
+    python3 -m venv .venv
+    source .venv/bin/activate
     sudo pip3 install --break-system-packages "subprober" "aiodns>=3.2.0" "aiofiles>=24.1.0" "aiojarm>=0.2.2" "alive_progress>=3.2.0" "appdirs>=1.4.4" "art>=6.4" "asynciolimiter>=1.1.1" "beautifulsoup4>=4.12.3" "colorama>=0.4.6" "cryptography>=44.0.0" "fake_useragent>=1.5.1" "httpx>=0.28.1" "mmh3>=5.0.1" "playwright>=1.49.1" "requests>=2.32.3" "rich>=13.9.4" "setuptools>=75.2.0" "simhash>=2.1.2" "urllib3>=1.26.18" "uvloop>=0.21.0" "websockets>=14.1" "bs4>=0.0.2" "lxml>=5.3.0"
-    for t in dnsbruter subdominator subprober; do [ -f "$HOME/.local/bin/$t" ] && [ "$HOME/.local/bin/$t" != "/usr/local/bin/$t" ] && sudo cp "$HOME/.local/bin/$t" /usr/local/bin/; done
+    for t in dnsbruter subdominator subprober; do [ -f "$HOME/.local/bin/$t" ] && [ "$HOME/.local/bin/$t" != "/usr/local/bin/$t" ] && sudo cp "$HOME/.local/bin/$t" /usr/local/bin/; done 
+    pwd && ORIGIN="$(pwd)" && cd "$ORIGIN/.venv/bin" && sudo cp * /usr/local/bin && cd "$ORIGIN"
+    pip install subprober
     sleep 3
 else
     show_progress "SubProber is already installed. Skipping installation."
@@ -871,6 +884,29 @@ else
         echo -e "${RED}Failed to build Waybackurls from source.${NC}"
         cd ..
         rm -rf waybackurls
+        pip uninstall pipx
+        rm -rf /usr/local/bin/pipx
+        rm -rf ~/.local/bin/pipx
+        rm -rf ~/.local/pipx
+        deactivate
+        python3 -m pip install --user pipx
+        python3 -m pipx ensurepath
+        source ~/.bashrc
+        rm -rf .venv
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pipx uninstall uro
+        pip uninstall uro 
+        pipx install uro
+        pip install --user uro
+        export PATH=$HOME/.local/bin:$PATH
+        pip install --upgrade pip setuptools wheel
+        pip install git+https://github.com/RevoltSecurities/Dnsbruter
+        pip install git+https://github.com/RevoltSecurities/Subprober
+        pip install aiodns aiofiles alive_progress art asynciolimiter colorama requests uvloop
+        pip install dnsbruter "aiodns>=3.2.0" "aiofiles>=24.1.0" "alive_progress>=3.2.0" "art>=6.1" "asynciolimiter>=1.1.0.post3" "colorama>=0.4.4" "requests>=2.32.3" "setuptools>=75.2.0" "uvloop>=0.21.0"
+        sudo pipx inject subdominator "aiofiles>=23.2.1" "aiosqlite" "aiohttp>=3.9.4" "appdirs>=1.4.4" "httpx>=0.27.2" "art>=6.1" "beautifulsoup4>=4.11.1" "colorama>=0.4.6" "fake_useragent>=1.5.0" "PyYAML>=6.0.1" "requests>=2.31.0" "rich>=13.7.1" "urllib3>=1.26.18" "tldextract>=5.1.2"
+        pip install "subprober" "aiodns>=3.2.0" "aiofiles>=24.1.0" "aiojarm>=0.2.2" "alive_progress>=3.2.0" "appdirs>=1.4.4" "art>=6.4" "asynciolimiter>=1.1.1" "beautifulsoup4>=4.12.3" "colorama>=0.4.6" "cryptography>=44.0.0" "fake_useragent>=1.5.1" "httpx>=0.28.1" "mmh3>=5.0.1" "playwright>=1.49.1" "requests>=2.32.3" "rich>=13.9.4" "setuptools>=75.2.0" "simhash>=2.1.2" "urllib3>=1.26.18" "uvloop>=0.21.0" "websockets>=14.1" "bs4>=0.0.2" "lxml>=5.3.0"
         exit 1
     fi
 fi
@@ -1832,7 +1868,7 @@ echo -e "${BOLD_BLUE}Appended URLs saved and combined into ${domain_name}-query.
 # Step 3: Checking page reflection on the URLs
 if [ -f "reflection.py" ]; then
     echo -e "${BOLD_WHITE}Checking page reflection on the URLs with command: python3 reflection.py ${domain_name}-query.txt --threads 2${NC}"
-    sudo python3 reflection.py "${domain_name}-query.txt" --threads 5 || handle_error "reflection.py execution"
+    sudo python3 reflection.py "${domain_name}-query.txt" --threads 2 || handle_error "reflection.py execution"
     sleep 5
 
     # Check if xss.txt is created after reflection.py
@@ -1882,62 +1918,12 @@ if [ -f "reflection.py" ]; then
             echo -e "${BOLD_WHITE}Initial Total Merged URLs in the beginning : ${RED}${total_merged_urls}${NC}"
             echo -e "${BOLD_WHITE}Filtered Final URLs for XSS Testing: ${RED}${total_urls}${NC}"
 
-            # Sorting URLs for xss0r
-echo -e "${BOLD_BLUE}Sorting valid format URLs for xss0r...${NC}"
-
-# Add www to http/https URLs and sort uniquely
-awk '{sub("http://", "http://www."); sub("https://", "https://www."); print}' xss-urls.txt | sort -u > sorted-xss-urls.txt
-
-# Validate the first 10 URLs with www
-echo -e "${BOLD_BLUE}Validating the first 10 URLs with 'http://www.'...${NC}"
-counter=0
-invalid_found=false
-
-while IFS= read -r url && [ "$counter" -lt 10 ]; do
-    # Check if the URL is reachable
-    status=$(curl -sL -o /dev/null -w "%{http_code}" "$url")
-    
-    if [[ "$status" -eq 000 ]]; then
-        echo -e "Invalid URL detected: $url (Connection failed)"
-        invalid_found=true
-        break
-    else
-        # Check the page title or body for specific errors
-        response=$(curl -sL "$url")
-        title=$(echo "$response" | grep -oP '(?<=<title>).*?(?=</title>)')
-        
-        if echo "$response" | grep -q "Hmm. We’re having trouble finding that site." || [[ "$title" == "Server Not Found" ]]; then
-            echo -e "Invalid URL detected: $url (Error page found)"
-            invalid_found=true
-            break
-        fi
-    fi
-
-    counter=$((counter + 1))
-done < sorted-xss-urls.txt
-
-# Normalize URLs if invalid URL found
-if $invalid_found; then
-    echo -e "${BOLD_BLUE}Adjusting all URLs to remove 'www.'...${NC}"
-    awk '{sub("http://www.", "http://"); sub("https://www.", "https://"); print}' sorted-xss-urls.txt > adjusted-xss-urls.txt
-    mv adjusted-xss-urls.txt xss-urls.txt
-else
-    echo -e "${BOLD_BLUE}No invalid URLs detected. Keeping 'www.' format.${NC}"
-    mv sorted-xss-urls.txt xss-urls.txt
-fi
-
-# Cleanup
-rm -f sorted-xss-urls.txt
-echo -e "${BOLD_BLUE}URL sorting completed!${NC}"
-
-
-# Start a new process group
-set -m
-
-# Safely kill processes related to xss0r
-pkill -f '^\.\/xss0r(\s|$)' || pkill -f 'xss0rdriver' || pkill -f 'google-chrome' || echo -e "${YELLOW}No xss0r-related tasks were running.${NC}"
-echo -e "Cleaned Tasks Before Run!${NC}"
-
+            #Sorting URLs for xss0r:
+            echo -e "${BOLD_BLUE}Sorting valid format URLs for xss0r...${NC}"
+            awk '{sub("http://", "http://www."); sub("https://", "https://www."); print}' xss-urls.txt | sort -u > sorted-xss-urls.txt
+            rm -r xss-urls.txt
+            mv sorted-xss-urls.txt xss-urls.txt
+            sleep 5
 
 
             # Automatically run the xss0r command after reflection step
@@ -1951,7 +1937,6 @@ echo -e "Cleaned Tasks Before Run!${NC}"
 else
     echo -e "${RED}reflection.py not found in the current directory. Skipping page reflection step.${NC}"
 fi
-
 }
 
 # Function to run step 8 (Launching xss0r Tool)
@@ -2088,7 +2073,7 @@ run_path_based_xss() {
 
     # Step 9: Running Python script for reflection checks
     show_progress "Running Python script for reflection checks on filtered URLs..."
-    sudo python3 path-reflection.py path-ready.txt --threads 3
+    sudo python3 path-reflection.py path-ready.txt --threads 2
 
     # Step 9.1: Checking if the new file is generated
     if [ -f path-xss-urls.txt ]; then
@@ -2114,13 +2099,6 @@ run_path_based_xss() {
 
     echo -e "${CYAN}Intermediate files deleted. Final output is $output_file.${NC}"
 
-    # Start a new process group
-    set -m
-
-# Safely kill processes related to xss0r
-pkill -f '^\.\/xss0r(\s|$)' || pkill -f 'xss0rdriver' || pkill -f 'google-chrome' || echo -e "${YELLOW}No xss0r-related tasks were running.${NC}"
-echo -e "Cleaned Tasks Before Run!${NC}"
-
     # Step 12: Launch the xss0r tool for path-based XSS testing
     echo -e "${BOLD_BLUE}Launching the xss0r tool on path-xss-urls.txt...${NC}"
     ./xss0r --get --urls path-xss-urls.txt --payloads payloads.txt --shuffle --threads 10 --path
@@ -2141,13 +2119,162 @@ trap_interrupt() {
 # Trap SIGINT (Ctrl+C)
 trap trap_interrupt SIGINT
 
+# Function for Domains Search Input with Query Appending
+run_domains_search_input() {
+    echo -e "${BOLD_WHITE}You selected: Domains Search Input with Query Appending${NC}"
 
-# Main script logic
+    # Define search queries
+    domains_queries=(
+        "search?q=aaa"
+        "?query=aaa"
+        "en-us/Search#/?search=aaa"
+        "Search/Results?q=aaa"
+        "q=aaa"
+        "search.php?query=aaa"
+        "en-us/search?q=aaa"
+        "s=aaa"
+        "find?q=aaa"
+        "result?q=aaa"
+        "query?q=aaa"
+        "search?term=aaa"
+        "search?query=aaa"
+        "search?keywords=aaa"
+        "search?text=aaa"
+        "search?word=aaa"
+        "find?query=aaa"
+        "result?query=aaa"
+        "search?input=aaa"
+        "search/results?query=aaa"
+        "search-results?q=aaa"
+        "search?keyword=aaa"
+        "results?query=aaa"
+        "search?search=aaa"
+        "search?searchTerm=aaa"
+        "search?searchQuery=aaa"
+        "search?searchKeyword=aaa"
+        "search.php?q=aaa"
+        "search/?query=aaa"
+        "search/?q=aaa"
+        "search/?search=aaa"
+        "search.aspx?q=aaa"
+        "search.aspx?query=aaa"
+        "search.asp?q=aaa"
+        "index.asp?id=aaa"
+        "dashboard.asp?user=aaa"
+        "blog/search/?query=aaa"
+        "pages/searchpage.aspx?id=aaa"
+        "search.action?q=aaa"
+        "search.json?q=aaa"
+        "search/index?q=aaa"
+        "lookup?q=aaa"
+        "browse?q=aaa"
+        "search-products?q=aaa"
+        "products/search?q=aaa"
+        "news?q=aaa"
+        "articles?q=aaa"
+        "content?q=aaa"
+        "explore?q=aaa"
+        "search/advanced?q=aaa"
+        "search-fulltext?q=aaa"
+        "products?query=aaa"
+        "search?product=aaa"
+        "catalog/search?q=aaa"
+        "store/search?q=aaa"
+        "shop?q=aaa"
+        "items?query=aaa"
+        "search?q=aaa&category=aaa"
+        "store/search?term=aaa"
+        "marketplace?q=aaa"
+        "blog/search?q=aaa"
+        "news?query=aaa"
+        "articles?search=aaa"
+        "topics?q=aaa"
+        "stories?q=aaa"
+        "newsfeed?q="
+        "search-posts?q=aaa"
+        "blog/posts?q=aaa"
+        "search/article?q=aaa"
+        "/api/search?q=aaa"
+        "en/search/explore?q=aaa"
+        "bs-latn-ba/Search/Results?q=aaa"
+        "en-us/marketplace/apps?search=aaa"
+        "v1/search?q=aaa"
+        "search/node?keys=aaaa"
+        "api/v1/search?q=aaa"
+    )
+
+    normalize_domain() {
+        local domain="$1"
+        domain=$(echo "$domain" | tr '[:upper:]' '[:lower:]' | sed 's/^http:\/\///' | sed 's/^https:\/\///' | sed 's/^www\.//')
+        echo "http://$domain"
+    }
+
+    append_and_save() {
+        local domain="$1"
+        local output_file="$2"
+        normalized_domain=$(normalize_domain "$domain")
+        for query in "${domains_queries[@]}"; do
+            if [[ $query == /* ]]; then
+                echo "$normalized_domain$query" >> "$output_file"
+            else
+                echo "$normalized_domain/$query" >> "$output_file"
+            fi
+        done
+    }
+
+    # Prompt for domains file
+    read -p "Enter the path to your domains .txt file: " domains_file
+    if [[ ! -f $domains_file ]]; then
+        echo -e "${RED}The file does not exist - Please use your domains file from step 3.${NC}"
+        return
+    fi
+
+    # Prepare output file
+    output_file="appended-domains.txt"
+    > "$output_file"
+
+    echo -e "${BOLD_BLUE}Processing domains from $domains_file and appending queries...${NC}"
+
+    # Process each domain and append queries
+    while IFS= read -r domain || [[ -n "$domain" ]]; do
+        append_and_save "$domain" "$output_file"
+    done < "$domains_file"
+
+    echo -e "${BOLD_GREEN}All domains appended with queries and saved to $output_file.${NC}"
+
+    # Run the reflection.py script
+    reflection_script="reflection.py"
+if [[ -f $reflection_script ]]; then
+    echo -e "${BOLD_BLUE}Formatting URLs in $output_file to http://www format...${NC}"
+    
+    # Preprocess $output_file to ensure all URLs are in the http://www format
+    temp_file="formatted_$output_file"
+    awk -F'://' '{print "http://www." $2}' "$output_file" > "$temp_file"
+    
+    # Replace the original file with the formatted version
+    mv "$temp_file" "$output_file"
+    
+    echo -e "${BOLD_GREEN}URLs formatted successfully.${NC}"
+    echo -e "${BOLD_BLUE}Running reflection.py on $output_file...${NC}"
+    sudo python3 "$reflection_script" "$output_file" --threads 3
+    echo -e "${BOLD_GREEN}Reflection done, new domains saved in the file xss.txt.${NC}"
+
+        # Run the xss0r command
+        if [[ -x ./xss0r ]]; then
+            echo -e "${BOLD_BLUE}Running xss0r Tool:${NC}"
+            ./xss0r --get --urls xss.txt --payloads payloads.txt --shuffle --threads 10
+        else
+            echo -e "${RED}xss0r executable not found in the current directory.${NC}"
+        fi
+    else
+        echo -e "${RED}Reflection script $reflection_script not found.${NC}"
+    fi
+}
 
 while true; do
     # Display options
     display_options
-    read -p "Enter your choice [1-11]: " choice
+    read -p "Enter your choice [1-12]: " choice
 
     # Check if the selected option is in the correct order
     if [[ $choice -ge 2 && $choice -le 8 && $choice -ne 4 ]]; then
@@ -2233,9 +2360,13 @@ while true; do
             echo -e "${BOLD_WHITE}You selected: Guide to Deploying xss0r on VPS Servers${NC}"
             show_vps_info
             ;;
-        11) # Execute Path-based XSS
+       11) # Execute Path-based XSS
             run_path_based_xss
             last_completed_option=11
+            ;;
+        12) # Domains Search Input
+            run_domains_search_input
+            last_completed_option=12
             ;;
         *)
             echo "Invalid option. Please select a number between 1 and 11."
